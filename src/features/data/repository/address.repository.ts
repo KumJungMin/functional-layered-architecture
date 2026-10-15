@@ -1,6 +1,8 @@
+import { plainToInstance } from 'class-transformer';
+import type { ClassTransformOptions } from 'class-transformer';
 import {
-  searchAddressRequestMapper,
-  searchAddressResponseMapper,
+  AddressModel,
+  SearchAddressRequestPayload,
 } from '../../mapping/address/address.mapper';
 import type {
   Address,
@@ -8,6 +10,11 @@ import type {
   SearchAddressRequestDTO,
   SearchAddressResponseDTO,
 } from '../../mapping/address/address.mapper';
+
+const transformationOptions: ClassTransformOptions = {
+  excludeExtraneousValues: true,
+  enableImplicitConversion: false,
+};
 
 export function createAddressRepository({
   api,
@@ -25,10 +32,16 @@ export function createAddressRepository({
 }) {
   return {
     async searchAddress(request: SearchAddressRequest): Promise<Address> {
-      const response = await api.searchAddress(
-        searchAddressRequestMapper(request),
-      );
-      return searchAddressResponseMapper(response);
+      const response = await api.searchAddress({
+        ...plainToInstance(
+          SearchAddressRequestPayload,
+          request,
+          transformationOptions,
+        ),
+      });
+      return {
+        ...plainToInstance(AddressModel, response, transformationOptions),
+      };
     },
     saveAddress: (address: Address) => store.setAddress(address),
     getAddress: () => store.getAddress(),
